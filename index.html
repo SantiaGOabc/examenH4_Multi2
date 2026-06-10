@@ -2,21 +2,26 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Star Wars: Persecución en el Espacio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <style>
       body {
         margin: 0;
+        padding: 0;
         background-color: #000;
         display: flex;
         justify-content: center;
         align-items: center;
+        width: 100vw;
         height: 100vh;
         overflow: hidden;
+        touch-action: none; /* Evita que la pantalla haga scroll al jugar en móvil */
       }
       canvas {
-        box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+        box-shadow: 0 0 30px rgba(255, 232, 31, 0.2);
+        display: block;
       }
     </style>
   </head>
@@ -28,10 +33,10 @@
         }
 
         preload() {
-          let loadingText = this.add.text(400, 300, "Cargando Recursos...", {
+          let loadingText = this.add.text(400, 300, "Cargando Hiperimpulsor...", {
             fontSize: "24px",
-            fill: "#ffffff",
-            fontFamily: "Courier",
+            fill: "#FFE81F",
+            fontFamily: "'Roboto Mono', monospace",
           }).setOrigin(0.5);
 
           // Imágenes
@@ -45,10 +50,11 @@
 
           // Audios
           this.load.audio("laser", "assets/laser.mp3");
-          this.load.audio("musicaganador", "assets/musciaganador.mp3");
-          this.load.audio("youwin", "assets/youwin.mp3");
+          this.load.audio("musicawin", "assets/musicawin.mp3");
+          this.load.audio("musicaMenu", "assets/musicamenu.mp3");
+          this.load.audio("sonidoStart", "assets/start.mp3");
 
-          // Texturas generadas en canvas
+          // Texturas generadas
           this.textures.addCanvas("espacio", crearGraficoEspacio());
           this.textures.addCanvas("laser", crearGraficoLaser());
           this.textures.addCanvas("laserTie", crearGraficoLaserTie());
@@ -65,104 +71,111 @@
         }
 
         create() {
+          // Fondo animado para el menú
+          this.fondoEspacio = this.add.tileSprite(400, 300, 800, 600, "espacio");
+
           let bg = this.add.image(400, 300, "menuBg");
           bg.setDisplaySize(800, 600);
+          bg.setAlpha(0.6); // Un poco transparente para ver las estrellas de fondo
 
           let overlay = this.add.graphics();
-          overlay.fillStyle(0x000000, 0.5);
+          overlay.fillStyle(0x000000, 0.4);
           overlay.fillRect(0, 0, 800, 600);
 
-          this.add.text(400, 150, "STAR WARS", {
-            fontSize: "72px",
-            fill: "#ffe81f",
-            fontFamily: "Courier",
-            fontStyle: "bold",
-            shadow: { color: "#000000", fill: true, offsetX: 4, offsetY: 4, blur: 8 }
+          let titulo = this.add.text(400, 180, "STAR WARS", {
+            fontSize: "80px",
+            fill: "#FFE81F",
+            fontFamily: "'Orbitron', sans-serif",
+            shadow: { color: "#000000", fill: true, offsetX: 5, offsetY: 5, blur: 10 }
           }).setOrigin(0.5);
 
-          this.add.text(400, 220, "PERSECUCIÓN EN EL ESPACIO", {
-            fontSize: "24px",
+          this.add.text(400, 260, "PERSECUCIÓN EN EL ESPACIO", {
+            fontSize: "22px",
             fill: "#ffffff",
-            fontFamily: "Courier",
-            fontStyle: "bold",
-            letterSpacing: 2,
+            fontFamily: "'Roboto Mono', monospace",
+            letterSpacing: 4,
             shadow: { color: "#000000", fill: true, offsetX: 2, offsetY: 2, blur: 4 }
           }).setOrigin(0.5);
 
-          // Botón único de inicio
-          let btnIniciar = this.add.text(400, 340, "INICIAR JUEGO", {
-            fontSize: "36px",
-            fill: "#ffe81f",
-            fontFamily: "Courier",
-            fontStyle: "bold",
-            shadow: { color: "#000000", fill: true, offsetX: 2, offsetY: 2, blur: 4 }
+          let btnIniciar = this.add.text(400, 380, "INICIAR JUEGO", {
+            fontSize: "32px",
+            fill: "#FFE81F",
+            fontFamily: "'Orbitron', sans-serif",
+            shadow: { color: "#000000", fill: true, offsetX: 3, offsetY: 3, blur: 5 }
           }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
           btnIniciar.on("pointerdown", () => this.iniciarJuego());
 
-          // Controles actualizados: disparo con ESPACIO
-          this.add.text(400, 480, "CONTROLES:\nJ1 (X-Wing): WASD | Disparar: ESPACIO\nPresiona ENTER para iniciar", {
+          this.add.text(400, 480, "PC: WASD + ESPACIO | MÓVIL: Toca y arrastra", {
             fontSize: "14px",
             fill: "#aaaaaa",
             align: "center",
-            fontFamily: "Courier"
+            fontFamily: "'Roboto Mono', monospace"
           }).setOrigin(0.5);
 
-          // Iniciar con ENTER o ESPACIO
           this.input.keyboard.on("keydown-ENTER", () => this.iniciarJuego());
           this.input.keyboard.on("keydown-SPACE", () => this.iniciarJuego());
+          this.input.on("pointerdown", () => this.iniciarJuego()); // Iniciar al tocar en móvil
+
+          if (!this.sound.get("musicaMenu")) {
+            this.musicaMenu = this.sound.add("musicaMenu", { loop: true, volume: 0.5 });
+            this.musicaMenu.play();
+          } else if (!this.sound.get("musicaMenu").isPlaying) {
+             this.sound.get("musicaMenu").play();
+          }
         }
 
         update() {
-          // Efecto de pulso en el botón (opcional)
-          let pulse = 1 + Math.sin(this.time.now / 200) * 0.05;
+          // Animación hiperespacio suave
+          this.fondoEspacio.tilePositionY -= 2;
+
+          let pulse = 1 + Math.sin(this.time.now / 300) * 0.05;
           let btn = this.children.list.find(c => c.text === "INICIAR JUEGO");
           if (btn) btn.setScale(pulse);
         }
 
         iniciarJuego() {
-          this.scene.start("GameScene"); // Siempre 1 jugador
+          this.sound.play("sonidoStart");
+          let musica = this.sound.get("musicaMenu");
+          if(musica) musica.stop();
+          this.scene.start("GameScene");
         }
       }
 
-      // --- ESCENA DEL JUEGO (UN SOLO JUGADOR) ---
       class GameScene extends Phaser.Scene {
         constructor() {
           super("GameScene");
         }
 
         init() {
-          // Siempre un jugador
           this.juegoTerminado = false;
           this.puntuacion = 0;
-          this.velocidadFondo = 3;
+          this.velocidadFondo = 5; // Más rápido para efecto de velocidad
           this.faseJefe = false;
+          this.ultimoDisparo = 0; // Control de disparo automático para móvil
         }
 
         create() {
           this.fondo = this.add.tileSprite(400, 300, 800, 600, "espacio");
 
-          // Jugador 1 (X-Wing)
           this.j1 = this.physics.add.sprite(400, 450, "xwing");
           this.j1.setCollideWorldBounds(true);
           this.j1.setDisplaySize(60, 53);
           this.j1.body.setSize(350, 350, true);
           this.j1.name = "P1";
-
+          
           this.vidaJ1 = 100;
 
-          // TIE Fighter (enemigo IA)
+          // TIE Fighter vuelve a estar activo desde el inicio (código original)
           this.tieFighter = this.physics.add.sprite(400, 550, "tie");
           this.tieFighter.setCollideWorldBounds(true);
           this.tieFighter.setDisplaySize(65, 43);
           this.tieFighter.body.setSize(400, 300, true);
 
-          // Grupos
           this.asteroides = this.physics.add.group();
           this.lasers = this.physics.add.group();
           this.lasersTie = this.physics.add.group();
 
-          // Generación de asteroides
           this.generadorAsteroides = this.time.addEvent({
             delay: 1000,
             callback: this.generarAsteroide,
@@ -170,44 +183,43 @@
             loop: true,
           });
 
-          // Controles del jugador 1 (disparo cambiado a ESPACIO)
+          // Emisor de partículas para explosiones
+          this.particulasE = this.add.particles(0, 0, 'laser', {
+            speed: 200,
+            scale: { start: 1.5, end: 0 },
+            blendMode: 'ADD',
+            lifespan: 300,
+            emitting: false
+          });
+
           this.teclasJ1 = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
             down: Phaser.Input.Keyboard.KeyCodes.S,
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
-            fire: Phaser.Input.Keyboard.KeyCodes.SPACE  // CAMBIO AQUÍ
+            fire: Phaser.Input.Keyboard.KeyCodes.SPACE
           });
 
-          // Cursores (para IA y reinicio)
           this.cursores = this.input.keyboard.createCursorKeys();
 
-          // HUD
-          this.textoPuntuacion = this.add.text(16, 16, "Puntuaje: 0", {
-            fontSize: "24px", fill: "#fff", fontFamily: "Courier",
+          this.textoPuntuacion = this.add.text(16, 16, "SCORE: 0", {
+            fontSize: "24px", fill: "#FFE81F", fontFamily: "'Orbitron', sans-serif",
+            shadow: { color: "#000000", fill: true, offsetX: 2, offsetY: 2, blur: 2 }
           });
 
-          this.textoEstadoJ1 = this.add.text(16, 70, "J1 (X-WING)", {
-            fontSize: "14px", fill: "#00ff00", fontFamily: "Courier",
-          });
-
-          // Barras de vida del jugador
           this.barraVidaBg = this.add.graphics();
           this.barraVida = this.add.graphics();
           this.dibujarBarraVida();
 
-          // Game Over
-          this.textoGameOver = this.add.text(400, 300, "GAME OVER\nPresiona ESPACIO para reiniciar\nESC para Menú", {
-            fontSize: "32px", fill: "#ff0000", align: "center", fontFamily: "Courier",
+          this.textoGameOver = this.add.text(400, 300, "SISTEMAS DESTRUIDOS\nToca o presiona ESPACIO para reiniciar", {
+            fontSize: "24px", fill: "#ff0000", align: "center", fontFamily: "'Roboto Mono', monospace",
             shadow: { color: "#000000", fill: true, offsetX: 2, offsetY: 2, blur: 4 }
           }).setOrigin(0.5).setVisible(false);
 
-          // Colisiones
           this.physics.add.collider(this.j1, this.asteroides, this.chocarFrenazo, null, this);
           this.physics.add.overlap(this.tieFighter, this.j1, this.atraparJugador, null, this);
           this.physics.add.overlap(this.lasersTie, this.j1, this.impactoTieAJ1, null, this);
 
-          // Salir al menú
           this.input.keyboard.on("keydown-ESC", () => {
             this.sound.stopAll();
             this.scene.start("MenuScene");
@@ -216,52 +228,71 @@
 
         dibujarBarraVida() {
           this.barraVidaBg.clear();
-          this.barraVidaBg.fillStyle(0xff0000, 0.6);
-          this.barraVidaBg.fillRect(16, 45, 200, 15);
+          this.barraVidaBg.fillStyle(0x330000, 0.8);
+          this.barraVidaBg.fillRect(16, 45, 200, 10);
 
           this.barraVida.clear();
-          this.barraVida.fillStyle(0x00ff00, 0.8);
+          let color = this.vidaJ1 > 30 ? 0x00ff00 : 0xff0000;
+          this.barraVida.fillStyle(color, 0.8);
           let anchoVida = (Math.max(this.vidaJ1, 0) / 100) * 200;
-          this.barraVida.fillRect(16, 45, anchoVida, 15);
+          this.barraVida.fillRect(16, 45, anchoVida, 10);
         }
 
         update() {
           if (this.juegoTerminado) {
-            if (this.cursores.space.isDown) this.reiniciarJuego();
+            if (this.cursores.space.isDown || this.input.activePointer.isDown) this.reiniciarJuego();
             return;
           }
 
           this.fondo.tilePositionY -= this.velocidadFondo;
           this.puntuacion += 10;
-          this.textoPuntuacion.setText("Puntuaje: " + this.puntuacion);
+          this.textoPuntuacion.setText("SCORE: " + this.puntuacion);
 
-          // Fase jefe
           if (this.puntuacion >= 15000 && !this.faseJefe) {
             this.iniciarFaseJefe();
           }
 
-          // Disparo del jugador (ahora con ESPACIO)
-          if (Phaser.Input.Keyboard.JustDown(this.teclasJ1.fire)) {
-            this.dispararLaser();
+          // Movimiento: Priorizar Touch/Móvil si está presionando
+          let manejadoPorToque = false;
+          if (this.input.activePointer.isDown) {
+            manejadoPorToque = true;
+            let tx = this.input.activePointer.x;
+            let ty = this.input.activePointer.y;
+            
+            this.physics.moveTo(this.j1, tx, ty - 40, 400); // Offset Y para no tapar la nave con el dedo
+
+            if (Phaser.Math.Distance.Between(this.j1.x, this.j1.y, tx, ty - 40) < 20) {
+              this.j1.setVelocity(0);
+            }
+
+            // Disparo automático al tocar (limitado por tiempo)
+            if (this.time.now > this.ultimoDisparo) {
+              this.dispararLaser();
+              this.ultimoDisparo = this.time.now + 250;
+            }
           }
 
-          // Movimiento J1
-          if (this.j1.active) {
+          // Movimiento: Teclado (si no hay toque)
+          if (!manejadoPorToque && this.j1.active) {
             this.j1.setVelocity(0);
             if (this.teclasJ1.left.isDown) {
-              this.j1.setVelocityX(-300);
+              this.j1.setVelocityX(-400);
             } else if (this.teclasJ1.right.isDown) {
-              this.j1.setVelocityX(300);
+              this.j1.setVelocityX(400);
             }
 
             if (this.teclasJ1.up.isDown) {
-              this.j1.setVelocityY(-200);
+              this.j1.setVelocityY(-300);
             } else if (this.teclasJ1.down.isDown) {
-              this.j1.setVelocityY(200);
+              this.j1.setVelocityY(300);
+            }
+
+            if (Phaser.Input.Keyboard.JustDown(this.teclasJ1.fire)) {
+              this.dispararLaser();
             }
           }
 
-          // Movimiento TIE Fighter (IA)
+          // Movimiento original del TIE Fighter (IA)
           if (this.tieFighter.active) {
             if (this.tieFighter.x < this.j1.x - 10) {
               this.tieFighter.setVelocityX(160);
@@ -279,7 +310,6 @@
             }
           }
 
-          // Limpieza de proyectiles y asteroides
           this.lasers.children.iterate((laser) => {
             if (laser && laser.y < -50) laser.destroy();
           });
@@ -290,7 +320,6 @@
             if (asteroide && asteroide.y > 650) asteroide.destroy();
           });
 
-          // Animación del jefe
           if (this.faseJefe && this.estrellaMuerte && this.estrellaMuerte.active) {
             this.estrellaMuerte.x = 400 + Math.sin(this.time.now / 1000) * 200;
           }
@@ -298,9 +327,9 @@
 
         dispararLaser() {
           if (!this.j1.active) return;
-          this.sound.play("laser", { volume: 0.4 });
+          this.sound.play("laser", { volume: 0.3 });
           let laser = this.lasers.create(this.j1.x, this.j1.y - 30, "laser");
-          laser.setVelocityY(-800);
+          laser.setVelocityY(-1000); 
         }
 
         impactoTieAJ1(j1, laser) {
@@ -321,9 +350,9 @@
           let x = Phaser.Math.Between(50, 750);
           let asteroide = this.asteroides.create(x, -50, "asteroide");
           asteroide.setDisplaySize(50, 44);
-          asteroide.body.setCircle(400, 112, 53);
-          asteroide.setVelocityY(Phaser.Math.Between(200, 400));
-          asteroide.setAngularVelocity(Phaser.Math.Between(-100, 100));
+          asteroide.body.setCircle(160);
+          asteroide.setVelocityY(Phaser.Math.Between(300, 500)); 
+          asteroide.setAngularVelocity(Phaser.Math.Between(-150, 150));
         }
 
         iniciarFaseJefe() {
@@ -355,23 +384,22 @@
 
         dibujarBarraJefe() {
           this.barraJefeBg.clear();
-          // Fondo oscuro (se mantiene gris)
           this.barraJefeBg.fillStyle(0x333333, 0.8);
-          this.barraJefeBg.fillRect(200, 20, 400, 12); // más pequeña y centrada
+          this.barraJefeBg.fillRect(200, 20, 400, 12);
 
           this.barraJefe.clear();
-          // Barra de vida roja
           this.barraJefe.fillStyle(0xff0000, 0.8);
-          let anchoJefe = (Math.max(this.estrellaMuerteVida, 0) / this.estrellaMuerteVidaMax) * 400; // ajustado al nuevo ancho
+          let anchoJefe = (Math.max(this.estrellaMuerteVida, 0) / this.estrellaMuerteVidaMax) * 400;
           this.barraJefe.fillRect(200, 20, anchoJefe, 12);
         }
 
         impactoJefe(jefe, laser) {
+          this.particulasE.emitParticleAt(laser.x, laser.y - 10, 5); // Chispas al chocar
           laser.destroy();
           this.estrellaMuerteVida -= 100;
           this.dibujarBarraJefe();
 
-          jefe.setTint(0xff0000);
+          jefe.setTint(0xffbbbb);
           this.time.delayedCall(100, () => jefe.clearTint());
 
           if (this.estrellaMuerteVida <= 0) {
@@ -380,7 +408,7 @@
         }
 
         chocarJefe(jugador, jefe) {
-          this.vidaJ1 -= 1;
+          this.vidaJ1 -= 2;
           this.dibujarBarraVida();
           this.cameras.main.shake(100, 0.01);
           if (this.vidaJ1 <= 0) {
@@ -389,12 +417,12 @@
         }
 
         chocarFrenazo(jugador, asteroide) {
+          this.particulasE.emitParticleAt(asteroide.x, asteroide.y, 15); // Explosión de asteroide
           asteroide.destroy();
           this.vidaJ1 -= 20;
           this.dibujarBarraVida();
-          jugador.y += 45;
+          
           this.cameras.main.shake(200, 0.02);
-
           jugador.setTint(0xff0000);
           this.time.delayedCall(200, () => jugador.clearTint());
 
@@ -404,11 +432,14 @@
         }
 
         atraparJugador(tie, jugador) {
+          let exp = this.add.sprite(jugador.x, jugador.y, "explosion");
+          exp.setScale(0.5);
+          this.tweens.add({ targets: exp, scale: 2, alpha: 0, duration: 800 });
+
           jugador.disableBody(true, true);
           jugador.active = false;
           this.vidaJ1 = 0;
           this.dibujarBarraVida();
-          this.textoEstadoJ1.setText("J1: DESTRUIDO").setFill("#ff0000");
 
           this.physics.pause();
           this.juegoTerminado = true;
@@ -420,25 +451,24 @@
           this.physics.pause();
           this.estrellaMuerte.setVisible(false);
           
-          this.sound.play("youwin", { volume: 0.8 });
-          this.sound.play("musicaganador", { volume: 0.6 });
+          this.sound.play("musicawin", { volume: 0.6 });
 
           let exp = this.add.sprite(this.estrellaMuerte.x, this.estrellaMuerte.y, "explosion");
           exp.setScale(0.1);
           
           this.tweens.add({
             targets: exp,
-            scaleX: 1.5,
-            scaleY: 1.5,
+            scaleX: 2.5,
+            scaleY: 2.5,
             alpha: 0,
-            duration: 1500,
+            duration: 2000,
             ease: "Power2"
           });
 
-          this.cameras.main.shake(1500, 0.05);
+          this.cameras.main.shake(2000, 0.05);
           this.cameras.main.flash(1500, 255, 255, 255);
           
-          this.time.delayedCall(2000, () => {
+          this.time.delayedCall(2500, () => {
             this.scene.start("GanadorScene");
           });
         }
@@ -449,7 +479,6 @@
         }
       }
 
-      // --- ESCENA DE VICTORIA ---
       class GanadorScene extends Phaser.Scene {
         constructor() {
           super("GanadorScene");
@@ -465,29 +494,28 @@
           bg.setDisplaySize(800, 600);
 
           let overlay = this.add.graphics();
-          overlay.fillStyle(0x000000, 0.5);
+          overlay.fillStyle(0x000000, 0.6);
           overlay.fillRect(0, 0, 800, 600);
 
           this.add.text(400, 200, "¡VICTORIA!", {
-            fontSize: "72px",
-            fill: "#ffe81f",
-            fontFamily: "Courier",
-            fontStyle: "bold",
+            fontSize: "64px",
+            fill: "#FFE81F",
+            fontFamily: "'Orbitron', sans-serif",
             shadow: { color: "#000000", fill: true, offsetX: 4, offsetY: 4, blur: 8 }
           }).setOrigin(0.5);
 
-          this.add.text(400, 300, "¡Has destruido la Estrella de la Muerte!", {
-            fontSize: "24px",
+          this.add.text(400, 300, "La galaxia está a salvo... por ahora.", {
+            fontSize: "22px",
             fill: "#ffffff",
-            fontFamily: "Courier",
+            fontFamily: "'Roboto Mono', monospace",
             shadow: { color: "#000000", fill: true, offsetX: 2, offsetY: 2, blur: 4 }
           }).setOrigin(0.5);
 
-          let btn = this.add.text(400, 500, "Presiona ENTER para volver al menú", {
+          let btn = this.add.text(400, 500, "TOCA PARA VOLVER AL MENÚ", {
             fontSize: "20px",
             fill: "#00ff00",
-            fontFamily: "Courier",
-          }).setOrigin(0.5);
+            fontFamily: "'Roboto Mono', monospace",
+          }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
           this.tweens.add({
             targets: btn,
@@ -503,14 +531,21 @@
         }
       }
 
-      // === CONFIGURACIÓN GENERAL ===
+      // Configuracion del juego para ser Responsivo y estar centrado
       const config = {
         type: Phaser.AUTO,
-        width: 800,
-        height: 600,
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+            width: 800,
+            height: 600
+        },
         physics: {
           default: "arcade",
-          arcade: { gravity: { y: 0 }, debug: false },
+          arcade: { 
+            gravity: { y: 0 }, 
+            debug: true 
+          },
         },
         scene: [BootScene, MenuScene, GameScene, GanadorScene]
       };
@@ -522,11 +557,11 @@
         canvas.width = 800;
         canvas.height = 600;
         let ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#050510";
+        ctx.fillStyle = "#020208";
         ctx.fillRect(0, 0, 800, 600);
         ctx.fillStyle = "#ffffff";
-        for (let i = 0; i < 80; i++) {
-          ctx.fillRect(Math.random() * 800, Math.random() * 600, Math.random() * 2 + 1, Math.random() * 2 + 1);
+        for (let i = 0; i < 150; i++) { 
+          ctx.fillRect(Math.random() * 800, Math.random() * 600, Math.random() * 2.5 + 0.5, Math.random() * 2.5 + 0.5);
         }
         return canvas;
       }
@@ -534,20 +569,24 @@
       function crearGraficoLaser() {
         let canvas = document.createElement("canvas");
         canvas.width = 4;
-        canvas.height = 20;
+        canvas.height = 25;
         let ctx = canvas.getContext("2d");
         ctx.fillStyle = "#ff0000";
-        ctx.fillRect(0, 0, 4, 20);
+        ctx.shadowColor = "#ff0000";
+        ctx.shadowBlur = 5;
+        ctx.fillRect(0, 0, 4, 25);
         return canvas;
       }
 
       function crearGraficoLaserTie() {
         let canvas = document.createElement("canvas");
         canvas.width = 4;
-        canvas.height = 20;
+        canvas.height = 25;
         let ctx = canvas.getContext("2d");
         ctx.fillStyle = "#00ff00";
-        ctx.fillRect(0, 0, 4, 20);
+        ctx.shadowColor = "#00ff00";
+        ctx.shadowBlur = 5;
+        ctx.fillRect(0, 0, 4, 25);
         return canvas;
       }
     </script>
