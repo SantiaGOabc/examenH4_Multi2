@@ -59,7 +59,6 @@
         }
       }
 
-      // --- MENÚ SIMPLIFICADO (SOLO 1 JUGADOR) ---
       class MenuScene extends Phaser.Scene {
         constructor() {
           super("MenuScene");
@@ -101,8 +100,8 @@
 
           btnIniciar.on("pointerdown", () => this.iniciarJuego());
 
-          // Controles (solo J1)
-          this.add.text(400, 480, "CONTROLES:\nJ1 (X-Wing): WASD | Disparar: F\nPresiona ENTER para iniciar", {
+          // Controles actualizados: disparo con ESPACIO
+          this.add.text(400, 480, "CONTROLES:\nJ1 (X-Wing): WASD | Disparar: ESPACIO\nPresiona ENTER para iniciar", {
             fontSize: "14px",
             fill: "#aaaaaa",
             align: "center",
@@ -161,7 +160,7 @@
           // Grupos
           this.asteroides = this.physics.add.group();
           this.lasers = this.physics.add.group();
-          this.lasersTie = this.physics.add.group(); // Aunque el TIE no dispara, se mantiene por si en un futuro se implementa
+          this.lasersTie = this.physics.add.group();
 
           // Generación de asteroides
           this.generadorAsteroides = this.time.addEvent({
@@ -171,16 +170,16 @@
             loop: true,
           });
 
-          // Controles del jugador 1
+          // Controles del jugador 1 (disparo cambiado a ESPACIO)
           this.teclasJ1 = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
             down: Phaser.Input.Keyboard.KeyCodes.S,
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
-            fire: Phaser.Input.Keyboard.KeyCodes.F
+            fire: Phaser.Input.Keyboard.KeyCodes.SPACE  // CAMBIO AQUÍ
           });
 
-          // Cursores solo para la IA (no se usan para jugador 2)
+          // Cursores (para IA y reinicio)
           this.cursores = this.input.keyboard.createCursorKeys();
 
           // HUD
@@ -192,7 +191,7 @@
             fontSize: "14px", fill: "#00ff00", fontFamily: "Courier",
           });
 
-          // Barras de vida
+          // Barras de vida del jugador
           this.barraVidaBg = this.add.graphics();
           this.barraVida = this.add.graphics();
           this.dibujarBarraVida();
@@ -241,7 +240,7 @@
             this.iniciarFaseJefe();
           }
 
-          // Disparo del jugador
+          // Disparo del jugador (ahora con ESPACIO)
           if (Phaser.Input.Keyboard.JustDown(this.teclasJ1.fire)) {
             this.dispararLaser();
           }
@@ -262,6 +261,7 @@
             }
           }
 
+          // Movimiento TIE Fighter (IA)
           if (this.tieFighter.active) {
             if (this.tieFighter.x < this.j1.x - 10) {
               this.tieFighter.setVelocityX(160);
@@ -279,6 +279,7 @@
             }
           }
 
+          // Limpieza de proyectiles y asteroides
           this.lasers.children.iterate((laser) => {
             if (laser && laser.y < -50) laser.destroy();
           });
@@ -354,13 +355,15 @@
 
         dibujarBarraJefe() {
           this.barraJefeBg.clear();
+          // Fondo oscuro (se mantiene gris)
           this.barraJefeBg.fillStyle(0x333333, 0.8);
-          this.barraJefeBg.fillRect(150, 20, 500, 15);
+          this.barraJefeBg.fillRect(200, 20, 400, 12); // más pequeña y centrada
 
           this.barraJefe.clear();
-          this.barraJefe.fillStyle(0x8800ff, 0.8);
-          let anchoJefe = (Math.max(this.estrellaMuerteVida, 0) / this.estrellaMuerteVidaMax) * 500;
-          this.barraJefe.fillRect(150, 20, anchoJefe, 15);
+          // Barra de vida roja
+          this.barraJefe.fillStyle(0xff0000, 0.8);
+          let anchoJefe = (Math.max(this.estrellaMuerteVida, 0) / this.estrellaMuerteVidaMax) * 400; // ajustado al nuevo ancho
+          this.barraJefe.fillRect(200, 20, anchoJefe, 12);
         }
 
         impactoJefe(jefe, laser) {
@@ -446,6 +449,7 @@
         }
       }
 
+      // --- ESCENA DE VICTORIA ---
       class GanadorScene extends Phaser.Scene {
         constructor() {
           super("GanadorScene");
@@ -499,6 +503,7 @@
         }
       }
 
+      // === CONFIGURACIÓN GENERAL ===
       const config = {
         type: Phaser.AUTO,
         width: 800,
